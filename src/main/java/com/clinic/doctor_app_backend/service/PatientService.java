@@ -176,9 +176,14 @@ public class PatientService {
         Patient existing = getPatientById(id);
 
         // -------- BASIC INFO --------
-        existing.setFirstName(lower(updated.getFirstName()));
+//        existing.setFirstName(lower(updated.getFirstName()));
+        existing.setFirstName(updated.getFirstName());
+
         existing.setMiddleName(updated.getMiddleName() != null ? lower(updated.getMiddleName()) : "");
-        existing.setLastName(lower(updated.getLastName()));
+//        existing.setLastName(lower(updated.getLastName()));
+        existing.setLastName(updated.getLastName());
+
+
         existing.setPhone(lower(updated.getPhone()));
         existing.setAddress(updated.getAddress());
         existing.setGender(updated.getGender());
