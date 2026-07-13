@@ -30,7 +30,11 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 
 //    List<Patient> findByPatientType(PatientType patientType);
 
-
+    @Query("SELECT p FROM Patient p WHERE " +
+            "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(CONCAT(p.firstName, ' ', p.lastName)) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<Patient> searchByFullName(@Param("searchTerm") String searchTerm);
 
     @Query("SELECT p.gender, COUNT(p) FROM Patient p GROUP BY p.gender")
     List<Object[]> countByGender();

@@ -9,6 +9,7 @@ import com.clinic.doctor_app_backend.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -150,9 +151,27 @@ public class PatientService {
 
         return patientRepository.findByPhoneContainingIgnoreCase(mobile);
     }
+//    public List<Patient> searchByFirstOrLastName(String name) {
+//        if (name != null) name = name.toLowerCase();
+//        return patientRepository.findByFirstNameIgnoreCaseContainingOrLastNameIgnoreCaseContaining(name, name);
+//    }
+
     public List<Patient> searchByFirstOrLastName(String name) {
-        if (name != null) name = name.toLowerCase();
-        return patientRepository.findByFirstNameIgnoreCaseContainingOrLastNameIgnoreCaseContaining(name, name);
+        if (name == null || name.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        name = name.trim();
+
+        // If contains space, use the full name search
+        if (name.contains(" ")) {
+            return patientRepository.searchByFullName(name);
+        } else {
+            // Single word search
+            return patientRepository.findByFirstNameIgnoreCaseContainingOrLastNameIgnoreCaseContaining(
+                    name, name
+            );
+        }
     }
 
     // ---------------- UPDATE ----------------
