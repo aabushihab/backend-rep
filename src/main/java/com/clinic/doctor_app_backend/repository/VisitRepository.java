@@ -16,7 +16,12 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 public interface VisitRepository extends JpaRepository<Visit, Long> {
-
+    @Query("""
+SELECT v FROM Visit v
+WHERE FUNCTION('DATE', v.createdAt) = :date
+ORDER BY v.createdAt DESC
+""")
+    List<Visit> findByDate(@Param("date") LocalDate date);
 
     List<Visit> findAllByDoctor_Id(Long doctorId);
 

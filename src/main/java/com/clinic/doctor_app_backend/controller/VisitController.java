@@ -28,7 +28,12 @@ public class VisitController {
     public VisitController(VisitService visitService) {
         this.visitService = visitService;
     }
-
+    @GetMapping("/by-date")
+    public ResponseEntity<List<Visit>> getVisitsByDate(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        return ResponseEntity.ok(visitService.getVisitsByDate(date));
+    }
 
     @GetMapping("/{visitId}/drug-prescriptions")
     public ResponseEntity<List<VisitDrugPrescriptionDto>>

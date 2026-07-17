@@ -52,6 +52,10 @@ public class VisitService {
 //    }
 
 
+    public List<Visit> getVisitsByDate(LocalDate date) {
+        return visitRepository.findByDate(date);
+    }
+
 
     public DoctorVisitSummaryDto getDoctorSummary(Long doctorId) {
 
