@@ -32,7 +32,22 @@ public class VisitController {
     public ResponseEntity<List<Visit>> getVisitsByDate(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        return ResponseEntity.ok(visitService.getVisitsByDate(date));
+        System.out.println("🔍 Searching for visits on date: " + date);
+
+        List<Visit> visits = visitService.getVisitsByDate(date);
+
+        System.out.println("📊 Found " + visits.size() + " visits for date: " + date);
+
+        if (visits.isEmpty()) {
+            System.out.println("⚠️ No visits found. Try: SELECT id, created_at FROM visit;");
+        } else {
+            visits.forEach(v -> {
+                System.out.println("✅ Visit ID: " + v.getId() +
+                        ", Created at: " + v.getCreatedAt());
+            });
+        }
+
+        return ResponseEntity.ok(visits);
     }
 
     @GetMapping("/{visitId}/drug-prescriptions")
