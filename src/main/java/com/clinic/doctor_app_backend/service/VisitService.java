@@ -1053,7 +1053,13 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                     payment.setVisit(visit);
                     payment.setPaymentMethod(PaymentMethod.FREE);
                     payment.setAmount(0.0);
+                    // Set all required fields with default values
+                    payment.setInsurancePaid(false);
+                    payment.setInsuranceAmount(0.0);
+                    payment.setInsurancePaidAmount(0.0);
+                    payment.setInsuranceDiscount(0.0);
 
+                    
                     visit.getPayments().add(payment);
                 }
 
