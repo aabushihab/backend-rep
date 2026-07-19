@@ -1151,6 +1151,8 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
         if (totalPaid >= original) {
             visit.setPaid(true);
             visit.setPaiedAt(LocalDateTime.now());
+            visit.setVisitStatus(VisitStatus.CLOSED);
+
         }
 
         visitRepository.save(visit);
