@@ -966,20 +966,47 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                 .orElseThrow(() -> new RuntimeException("Visit not found"));
 
         // ================= ORIGINAL AMOUNT + CURRENCY =================
+//        if (visit.getOriginalAmount() == null) {
+//
+//            if (req.getOriginalAmount() == null || req.getOriginalAmount() <= 0) {
+//                throw new RuntimeException("Original amount required");
+//            }
+//
+//            if (req.getCurrency() == null || req.getCurrency().isBlank()) {
+//                throw new RuntimeException("Currency is required");
+//            }
+//
+//            visit.setOriginalAmount(req.getOriginalAmount());
+//            visit.setCurrency(req.getCurrency());
+//        }
+
+
+        // ================= ORIGINAL AMOUNT + CURRENCY =================
         if (visit.getOriginalAmount() == null) {
 
-            if (req.getOriginalAmount() == null || req.getOriginalAmount() <= 0) {
-                throw new RuntimeException("Original amount required");
-            }
+            // Check if all payments are FREE
+            boolean allFreePayments = req.getPayments() != null &&
+                    req.getPayments().stream()
+                            .allMatch(p -> p.getPaymentMethod() == PaymentMethod.FREE);
 
-            if (req.getCurrency() == null || req.getCurrency().isBlank()) {
-                throw new RuntimeException("Currency is required");
-            }
+            if (allFreePayments) {
+                // FREE payment - set amount to 0
+                visit.setOriginalAmount(0.0);
+                visit.setCurrency(req.getCurrency() != null ? req.getCurrency() : "USD");
+            } else {
+                // Regular payments - require original amount
+                if (req.getOriginalAmount() == null || req.getOriginalAmount() <= 0) {
+                    throw new RuntimeException("Original amount required");
+                }
 
-            visit.setOriginalAmount(req.getOriginalAmount());
-            visit.setCurrency(req.getCurrency());
+                if (req.getCurrency() == null || req.getCurrency().isBlank()) {
+                    throw new RuntimeException("Currency is required");
+                }
+
+                visit.setOriginalAmount(req.getOriginalAmount());
+                visit.setCurrency(req.getCurrency());
+            }
         }
-
         if (req.getPayments() == null || req.getPayments().isEmpty()) {
             throw new RuntimeException("At least one payment is required");
         }
