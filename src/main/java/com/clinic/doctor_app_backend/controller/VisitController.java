@@ -311,6 +311,13 @@ public List<DrugDto> getDrugsByVisitId(
         dto.id = p.getId();
         dto.paymentMethod = p.getPaymentMethod() != null ? p.getPaymentMethod().name() : null;
 
+
+        // 🔥 ADD THESE LINES TO MAP PAYMENT NUMBER FIELDS
+        dto.paymentNumber = p.getPaymentNumber();
+        dto.paymentYear = p.getPaymentYear();
+        dto.sequenceNumber = p.getSequenceNumber();
+        // 🔥 END OF ADDED LINES
+
         dto.insuranceAmount = p.getInsuranceAmount();
         dto.insuranceProvider = p.getInsuranceProvider();
         dto.insuranceClass = p.getInsuranceClass();
