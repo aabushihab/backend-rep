@@ -618,6 +618,10 @@ public class VisitService {
                     i.setApprovalCode(p.getApprovalCode());
 
                     i.setPaidAt(p.getPaidAt());
+                    // 🔑 ADD PAYMENT NUMBER FIELDS HERE
+                    i.setPaymentNumber(p.getPaymentNumber());
+                    i.setPaymentYear(p.getPaymentYear());
+                    i.setSequenceNumber(p.getSequenceNumber());
 
                     return i;
                 }).toList();
@@ -912,6 +916,25 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
 
 
 
+    private Long extractSequenceNumber(String paymentNumber) {
+        if (paymentNumber == null || paymentNumber.length() < 5) {
+            throw new RuntimeException("Invalid payment number format");
+        }
+
+        // Try to parse the sequence part
+        String sequencePart = paymentNumber.substring(4).replaceAll("[^0-9]", "");
+
+        if (sequencePart.isEmpty()) {
+            throw new RuntimeException("Could not extract sequence number from: " + paymentNumber);
+        }
+
+        try {
+            return Long.parseLong(sequencePart);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Invalid sequence number: " + sequencePart, e);
+        }
+    }
+
     @Transactional
     public void payVisit(Long visitId, VisitPayRequest req) {
 
@@ -1064,6 +1087,70 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                 }
 
                 // ---------------- INSURANCE ----------------
+//                case INSURANCE -> {
+//
+//                    if (part.getCoveragePercent() == null || part.getCoveragePercent() <= 0) {
+//                        throw new RuntimeException("Insurance coverage percent required");
+//                    }
+//
+//                    if (part.getInsuranceAmount() == null || part.getInsuranceAmount() <= 0) {
+//                        throw new RuntimeException("Insurance amount required");
+//                    }
+//
+//                    double coverage = part.getCoveragePercent() / 100.0;
+//
+//                    double totalAmount = part.getInsuranceAmount();
+//
+//                    double insuredAmount = totalAmount * coverage;   // insurance pays
+//                    double cashAmount = totalAmount - insuredAmount; // patient pays
+//
+//                    // ================= INSURANCE RECORD =================
+//                    VisitPayment insurancePayment = new VisitPayment();
+//
+//                    // Generate insurance payment number with prefix
+//                    String insurancePaymentNumber = paymentNumberGeneratorService.generatePaymentNumberWithPrefix("INS");
+//                    insurancePayment.setPaymentNumber(insurancePaymentNumber);
+//                    insurancePayment.setPaymentYear(LocalDateTime.now().getYear());
+//                    insurancePayment.setSequenceNumber(extractSequenceNumber(insurancePaymentNumber));
+//                    insurancePayment.setVisit(visit);
+//                    insurancePayment.setPaymentMethod(PaymentMethod.INSURANCE);
+//
+//                    insurancePayment.setInsuranceAmount(insuredAmount);
+//                    insurancePayment.setInsurancePaid(false);
+//                    insurancePayment.setInsurancePaidAmount(0.0);
+//                    insurancePayment.setInsuranceDiscount(0.0);
+//
+//                    insurancePayment.setInsuranceProvider(part.getInsuranceProvider());
+//                    insurancePayment.setInsuranceClass(part.getInsuranceClass());
+//                    insurancePayment.setInsuranceType(part.getInsuranceType());
+//                    insurancePayment.setCoveragePercent(part.getCoveragePercent());
+//                    insurancePayment.setInsuranceAcceptNumber(part.getInsuranceAcceptNumber());
+//                    insurancePayment.setInsuranceCardId(part.getCardId());
+//                    insurancePayment.setInsuranceFormId(part.getInsuranceFormId());
+//
+//                    visit.getPayments().add(insurancePayment);
+//
+//                    // ================= CASH PART =================
+//                    if (cashAmount > 0) {
+//                        VisitPayment cashPayment = new VisitPayment();
+//
+//                        // Generate cash payment number
+//                        String cashPaymentNumber = paymentNumberGeneratorService.generatePaymentNumber();
+//                        cashPayment.setPaymentNumber(cashPaymentNumber);
+//                        cashPayment.setPaymentYear(LocalDateTime.now().getYear());
+//                        cashPayment.setSequenceNumber(Long.parseLong(cashPaymentNumber.substring(4)));
+//
+//                        cashPayment.setVisit(visit);
+//                        cashPayment.setPaymentMethod(PaymentMethod.CASH);
+//                        cashPayment.setAmount(cashAmount);
+//
+//                        visit.getPayments().add(cashPayment);
+//
+//                        totalPaid += cashAmount;
+//                    }
+//                } this for 21072026
+
+                // ---------------- INSURANCE ----------------
                 case INSURANCE -> {
 
                     if (part.getCoveragePercent() == null || part.getCoveragePercent() <= 0) {
@@ -1075,11 +1162,11 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                     }
 
                     double coverage = part.getCoveragePercent() / 100.0;
-
                     double totalAmount = part.getInsuranceAmount();
-
                     double insuredAmount = totalAmount * coverage;   // insurance pays
-                    double cashAmount = totalAmount - insuredAmount; // patient pays
+
+                    // Use the cash amount sent from frontend, default to 0 if not provided
+                    double cashAmount = part.getCashAmount() != null ? part.getCashAmount() : 0.0;
 
                     // ================= INSURANCE RECORD =================
                     VisitPayment insurancePayment = new VisitPayment();
@@ -1088,8 +1175,7 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                     String insurancePaymentNumber = paymentNumberGeneratorService.generatePaymentNumberWithPrefix("INS");
                     insurancePayment.setPaymentNumber(insurancePaymentNumber);
                     insurancePayment.setPaymentYear(LocalDateTime.now().getYear());
-                    insurancePayment.setSequenceNumber(Long.parseLong(insurancePaymentNumber.substring(4)));
-
+                    insurancePayment.setSequenceNumber(extractSequenceNumber(insurancePaymentNumber));
                     insurancePayment.setVisit(visit);
                     insurancePayment.setPaymentMethod(PaymentMethod.INSURANCE);
 
@@ -1109,6 +1195,7 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                     visit.getPayments().add(insurancePayment);
 
                     // ================= CASH PART =================
+                    // Only create cash payment if cashAmount > 0 was sent from frontend
                     if (cashAmount > 0) {
                         VisitPayment cashPayment = new VisitPayment();
 
@@ -1116,7 +1203,7 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                         String cashPaymentNumber = paymentNumberGeneratorService.generatePaymentNumber();
                         cashPayment.setPaymentNumber(cashPaymentNumber);
                         cashPayment.setPaymentYear(LocalDateTime.now().getYear());
-                        cashPayment.setSequenceNumber(Long.parseLong(cashPaymentNumber.substring(4)));
+                        cashPayment.setSequenceNumber(extractSequenceNumber(cashPaymentNumber));
 
                         cashPayment.setVisit(visit);
                         cashPayment.setPaymentMethod(PaymentMethod.CASH);

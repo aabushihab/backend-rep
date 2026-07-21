@@ -52,5 +52,10 @@ public class VisitPaymentDetailsResponse {
         private String approvalCode;
 
         private LocalDateTime paidAt;
+
+        // 🔑 NEW FIELDS FOR PAYMENT NUMBER
+        private String paymentNumber;
+        private Integer paymentYear;
+        private Long sequenceNumber;
     }
 }
