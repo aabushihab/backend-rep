@@ -73,4 +73,28 @@ public class VisitPayment {
 //        return paid + discount >= billed;
 //    }
 
+
+
+
+    // 🔑 PAYMENT NUMBER (RECEIPT NUMBER)
+    @Column(name = "payment_number", unique = true, nullable = false)
+    private String paymentNumber;
+
+    // For yearly sequence tracking
+    @Column(name = "payment_year")
+    private Integer paymentYear;
+
+    @Column(name = "sequence_number")
+    private Long sequenceNumber;
+
+    // Helper method to generate payment number
+    @PrePersist
+    public void generatePaymentNumber() {
+        if (this.paymentNumber == null) {
+            this.paymentYear = LocalDateTime.now().getYear();
+            // This would be replaced with actual sequence generation logic
+            this.paymentNumber = String.format("%d%06d", this.paymentYear, this.sequenceNumber);
+        }
+    }
+
 }

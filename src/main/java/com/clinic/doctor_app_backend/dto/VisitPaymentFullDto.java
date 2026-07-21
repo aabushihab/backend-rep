@@ -4,6 +4,11 @@ import java.time.LocalDateTime;
 
 public class VisitPaymentFullDto {
 
+
+    public String paymentNumber;  // ADD THIS
+    public Integer paymentYear;   // ADD THIS
+    public Long sequenceNumber;   // ADD THIS
+
     public Long id;
     public Long visitId;
 

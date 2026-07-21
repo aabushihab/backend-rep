@@ -33,11 +33,14 @@ public class VisitService {
     private final DrugRepository drugRepository;
     private final VisitPaymentRepository visitPaymentRepository;
 
+    private final PaymentNumberGeneratorService paymentNumberGeneratorService; // ADD THIS
+
+
     public VisitService(VisitDrugRepository visitDrugRepository, VisitRepository visitRepository,
                         PatientRepository patientRepository,
                         DoctorRepository doctorRepository,
                         AppointmentRepository appointmentRepository,
-                        WalkInRepository walkInRepository, DrugRepository drugRepository, VisitPaymentRepository visitPaymentRepository) {
+                        WalkInRepository walkInRepository, DrugRepository drugRepository, VisitPaymentRepository visitPaymentRepository, PaymentNumberGeneratorService paymentNumberGeneratorService) {
         this.visitDrugRepository = visitDrugRepository; // Update constructor
         this.visitRepository = visitRepository;
         this.patientRepository = patientRepository;
@@ -46,6 +49,7 @@ public class VisitService {
         this.walkInRepository = walkInRepository;
         this.drugRepository = drugRepository;
         this.visitPaymentRepository = visitPaymentRepository;
+        this.paymentNumberGeneratorService = paymentNumberGeneratorService;
     }
 //    public List<?> getVisitsByPatientId(Long patientId) {
 //        return visitRepository.findVisitsByPatient(patientId);
@@ -841,15 +845,6 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
 
     return visitRepository.save(visit);
 }
-//    public Visit removeDrug(Long visitId, Long drugId) {
-//
-//        Visit visit = visitRepository.findById(visitId)
-//                .orElseThrow(() -> new RuntimeException("Visit not found"));
-//
-//        visit.getDrugs().removeIf(d -> d.getDrugId().equals(drugId));
-//
-//        return visitRepository.save(visit);
-//    }
 
 
     public Visit removeDrug(Long visitId, Long drugId) {
@@ -864,58 +859,6 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
         return visitRepository.save(visit);
     }
 
-
-//    @Transactional
-//    public void settleInsurance(
-//            Long paymentId,
-//            Double paidAmount,
-//            Double discountAmount
-//    ) {
-//
-//        VisitPayment payment = visitPaymentRepository.findById(paymentId)
-//                .orElseThrow(() -> new RuntimeException("Payment not found"));
-//
-//        payment.setInsurancePaidAmount(paidAmount);
-//        payment.setInsuranceDiscount(discountAmount);
-//
-//        double totalSettled =
-//                (paidAmount == null ? 0 : paidAmount) +
-//                        (discountAmount == null ? 0 : discountAmount);
-//
-//        double expected = payment.getInsuranceAmount() == null
-//                ? 0
-//                : payment.getInsuranceAmount();
-//
-//        boolean settled = totalSettled >= expected;
-//
-//        payment.setInsurancePaid(settled);
-//
-//        // IMPORTANT: persist payment
-//        visitPaymentRepository.save(payment);
-//
-//        Visit visit = payment.getVisit();
-//
-//        double totalPaid = visit.getPayments().stream()
-//                .mapToDouble(p ->
-//                        (p.getAmount() != null ? p.getAmount() : 0)
-//                                +
-//                                (p.getInsurancePaidAmount() != null ? p.getInsurancePaidAmount() : 0)
-//                                +
-//                                (p.getInsuranceDiscount() != null ? p.getInsuranceDiscount() : 0)
-//                )
-//                .sum();
-//
-//        if (totalPaid >= visit.getOriginalAmount()) {
-//            visit.setPaid(true);
-//            visit.setPaiedAt(LocalDateTime.now());
-//
-//            // 🔥 FIX: close visit when fully settled
-//            visit.setVisitStatus(VisitStatus.CLOSED);
-//
-//        }
-//
-//        visitRepository.save(visit);
-//    } above 20062026
 
 
     @Transactional
@@ -936,6 +879,8 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
         payment.setInsurancePaidAmount(paid);
         payment.setInsuranceDiscount(discount);
 
+
+
         boolean insuranceFullySettled =
                 Math.abs((paid + discount) - expected) < 0.0001;
 
@@ -945,6 +890,14 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
 
         // ================= UPDATE VISIT =================
         Visit visit = payment.getVisit();
+
+        // Generate payment number if not already set
+        if (payment.getPaymentNumber() == null) {
+            String paymentNumber = paymentNumberGeneratorService.generatePaymentNumberWithPrefix("INS-SETTLE");
+            payment.setPaymentNumber(paymentNumber);
+            payment.setPaymentYear(LocalDateTime.now().getYear());
+            payment.setSequenceNumber(Long.parseLong(paymentNumber.substring(4)));
+        }
 
         // 🔥 ONLY insurance decides closure (no mixing with cash/POS)
         if (insuranceFullySettled) {
@@ -1037,6 +990,13 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                     }
 
                     VisitPayment payment = new VisitPayment();
+
+                    // Generate payment number
+                    String paymentNumber = paymentNumberGeneratorService.generatePaymentNumber();
+                    payment.setPaymentNumber(paymentNumber);
+                    payment.setPaymentYear(LocalDateTime.now().getYear());
+                    payment.setSequenceNumber(Long.parseLong(paymentNumber.substring(4)));
+
                     payment.setVisit(visit);
                     payment.setPaymentMethod(PaymentMethod.CASH);
                     payment.setAmount(part.getCashAmount());
@@ -1060,6 +1020,12 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                     }
 
                     VisitPayment payment = new VisitPayment();
+
+                    String paymentNumber = paymentNumberGeneratorService.generatePaymentNumber();
+                    payment.setPaymentNumber(paymentNumber);
+                    payment.setPaymentYear(LocalDateTime.now().getYear());
+                    payment.setSequenceNumber(Long.parseLong(paymentNumber.substring(4)));
+
                     payment.setVisit(visit);
                     payment.setPaymentMethod(PaymentMethod.POS);
                     payment.setAmount(part.getCashAmount());
@@ -1077,6 +1043,13 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                 // ---------------- FREE ----------------
                 case FREE -> {
                     VisitPayment payment = new VisitPayment();
+
+                    // Generate payment number
+                    String paymentNumber = paymentNumberGeneratorService.generatePaymentNumber();
+                    payment.setPaymentNumber(paymentNumber);
+                    payment.setPaymentYear(LocalDateTime.now().getYear());
+                    payment.setSequenceNumber(Long.parseLong(paymentNumber.substring(4)));
+
                     payment.setVisit(visit);
                     payment.setPaymentMethod(PaymentMethod.FREE);
                     payment.setAmount(0.0);
@@ -1110,6 +1083,13 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
 
                     // ================= INSURANCE RECORD =================
                     VisitPayment insurancePayment = new VisitPayment();
+
+                    // Generate insurance payment number with prefix
+                    String insurancePaymentNumber = paymentNumberGeneratorService.generatePaymentNumberWithPrefix("INS");
+                    insurancePayment.setPaymentNumber(insurancePaymentNumber);
+                    insurancePayment.setPaymentYear(LocalDateTime.now().getYear());
+                    insurancePayment.setSequenceNumber(Long.parseLong(insurancePaymentNumber.substring(4)));
+
                     insurancePayment.setVisit(visit);
                     insurancePayment.setPaymentMethod(PaymentMethod.INSURANCE);
 
@@ -1131,6 +1111,13 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
                     // ================= CASH PART =================
                     if (cashAmount > 0) {
                         VisitPayment cashPayment = new VisitPayment();
+
+                        // Generate cash payment number
+                        String cashPaymentNumber = paymentNumberGeneratorService.generatePaymentNumber();
+                        cashPayment.setPaymentNumber(cashPaymentNumber);
+                        cashPayment.setPaymentYear(LocalDateTime.now().getYear());
+                        cashPayment.setSequenceNumber(Long.parseLong(cashPaymentNumber.substring(4)));
+
                         cashPayment.setVisit(visit);
                         cashPayment.setPaymentMethod(PaymentMethod.CASH);
                         cashPayment.setAmount(cashAmount);
@@ -1321,6 +1308,11 @@ public Visit addDrugsToVisit(Long visitId, List<Long> drugIds) {
 
         d.id = p.getId();
         d.visitId = p.getVisit() != null ? p.getVisit().getId() : null;
+
+        // ADD THESE LINES
+        d.paymentNumber = p.getPaymentNumber();
+        d.paymentYear = p.getPaymentYear();
+        d.sequenceNumber = p.getSequenceNumber();
 
         d.paymentMethod = p.getPaymentMethod() != null ? p.getPaymentMethod().name() : null;
 
